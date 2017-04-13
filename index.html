@@ -1,0 +1,416 @@
+<html>
+    <head>
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+        <title>EChO</title>
+        <style type="text/css">
+            body{margin:0;padding:0;overflow:hidden;display:block;}
+            @font-face{font-family:"Quicksand-Light";src:url("Quicksand-Light.ttf");}
+        </style>
+    </head>
+
+<body>
+<script type ="text/javascript" src="cordova.js"></script>
+<script type ="text/javascript" src="pixi.min.js"></script>
+<script type="text/javascript">
+    document.addEventListener('deviceready', function(){console.log("Cordova is initialized and ready!");}, false);
+    var loader = PIXI.loader;
+    loader.add('blueBack','back4.png');
+    loader.once('complete',initiate);
+    loader.load();
+    function initiate(){
+        renderer = PIXI.autoDetectRenderer(
+            100,
+            160,
+            {
+                backgroundColor:0,
+                transparent:false
+            }
+        );
+        menu = PIXI.autoDetectRenderer(
+            500,
+            500,
+            {
+                transparent:true
+            }
+        );
+        bg = new PIXI.CanvasRenderer(
+            window.innerWidth,
+            window.innerHeight,
+            {
+                backgroundColor:0xABCDEF
+            }
+        );
+        oldSize = [renderer.width,renderer.height];
+        ratio = renderer.width/renderer.height;
+        w=w2=renderer.width;
+        h=h2=renderer.height/ratio;
+        currtime = new Date().getTime();
+        lasttime = currtime;
+        delta = 0;
+        stage = new PIXI.Container();
+        bgStage = new PIXI.Container();
+        menuStage = new PIXI.Container();
+        menu.view.style.position="absolute";
+        renderer.view.style.position="absolute";
+        bg.view.style.position="absolute";
+        document.body.appendChild(bg.view);
+        document.body.appendChild(renderer.view);
+        document.body.appendChild(menu.view);
+        r = Math.random;round = Math.round;
+        sin = Math.sin;cos = Math.cos;pi = Math.PI;atan2 = Math.atan2;
+        pow = Math.pow;sqrt = Math.sqrt;max = Math.max;min = Math.min;
+        abs = Math.abs;sign = Math.sign;ceil = Math.ceil;floor = Math.floor;
+        unit = 0;
+        blueBack = new PIXI.extras.TilingSprite(loader.resources.blueBack.texture);
+        bgStage.addChild(blueBack);
+        b = new debug2();
+        
+        circle = new PIXI.RenderTexture(renderer, 100, 100);
+        graph = new PIXI.Graphics();
+        graph.beginFill(0xFFFFFF);
+        graph.drawCircle(50, 50, 50);
+        graph.endFill();
+        circle.render(graph);
+        
+        
+        eatVal = 1;
+        lerpVal = 0.2;
+        mutateVal = 0.9999;
+        twitchVal = 0;
+        
+        
+        resize2();
+        animate();
+    }
+    function rgb2hsv(r,g,b){
+        r=r/255;g=g/255;b=b/255;
+        var minRGB = min(r,min(g,b));
+        var maxRGB = max(r,max(g,b));
+        if (minRGB==maxRGB){
+            computedV==minRGB;
+            return[0,0,computedV];
+        }
+        var d = (r==minRGB) ? g-b :((b==minRGB) ? r-g : b-r);
+        var h = (r==minRGB) ? 3 : ((b==minRGB) ? 1 : 5);
+        computedH = 60*(h-d/(maxRGB-minRGB));
+        computedS = (maxRGB - minRGB)/maxRGB;
+        computedV = maxRGB;
+        return [computedH,computedS,computedV];
+    }
+    function hsv2rgb(h,s,v){
+        var rgb,i,data = [];
+        if (s===0){
+            rgb = [v,v,v];
+        } else {
+            h = h/60;
+            i = Math.floor(h);
+            data = [v*(1-s),v*(1-s*(h-i)),v*(1-s*(1-(h-i)))];
+            switch(i){
+                case 0:
+                    rgb = [v,data[2],data[0]];
+                    break;
+                case 1:
+                    rgb = [data[1],v,data[0]];
+                    break;
+                case 2:
+                    rgb = [data[0],v,data[2]];
+                    break;
+                case 3:
+                    rgb = [data[0],data[1],v];
+                    break;
+                case 4:
+                    rgb = [data[2],data[0],v];
+                    break;
+                default:
+                    rgb = [v,data[0],data[1]];
+                    break;
+            }
+        }
+        /*
+        return '#' + rgb.map(function(x){
+            return ("0" + Math.round(x*255).toString(16)).slice(-2);
+        }).join('');
+        */
+        rgb = rgb.map(function(x){
+            return (Math.round(x*255));
+        })
+        return (rgb[0]*0x10000+rgb[1]*0x100+rgb[2]);
+    };
+    /*
+    for (x=0;x<1000;x++){
+        console.log(hsv2rgb(x,0.6,0.7));
+    }
+    */
+    console.log(hsv2rgb(180,0.2157,1));
+    console.log(hsv2rgb(0,0,1));
+    
+    function resize2(event){
+        w = window.innerWidth;
+        h = window.innerHeight;
+        if (w/h<=ratio){
+            w2 = w;
+            h2 = w/ratio;
+            renderer.view.style.top=h/2-h2/2+"px";
+            renderer.view.style.left="0px";
+            menu.view.style.top=h/2-h2/2+"px";
+            menu.view.style.left="0px";
+        }
+        else{
+            w2 = h*ratio;
+            h2 = h;
+            renderer.view.style.top="0px";
+            renderer.view.style.left=w/2-w2/2+"px";
+            menu.view.style.top="0px";
+            menu.view.style.left=w/2-w2/2+"px";
+        }
+        renderer.resize(w2,h2);
+            renderer.view.style.width = w2+"px";
+            renderer.view.style.height = h2+"px";
+            menu.resize(w2,h2);
+            menu.view.style.width = w2+"px";
+            menu.view.style.height = h2+"px";
+            blueBack.width = w;
+            blueBack.height = h;
+            b.text.style.font=h2/10+"px Quicksand-Light";
+            b.text.y=h2/20*-1;
+            for (i=0;i<stage.children.length;i++){
+                stage.children[i].width=stage.children[i].height=w2*stage.children[i].rSize;
+                stage.children[i].x = stage.children[i].x*w2/oldSize[0];
+                stage.children[i].y = stage.children[i].y*h2/oldSize[1];
+            }
+        bg.view.style.width = w+"px";
+        bg.view.style.height = h+"px";
+        bg.resize(w,h);
+        unit = renderer.width/60/100;
+        oldSize = [w2,h2];
+        window.scrollTo(0,0);
+    }
+    
+    window.addEventListener('resize',resize2);
+    
+    
+
+    function debug2() {
+        this.text = new PIXI.Text("",{font:'10em Quicksand-Light',fill:'white'});
+        this.texts = ["\n","\n","\n","\n","\n"];
+        this.add = function(n){
+            this.text.alpha=1;
+            this.texts.push(n+"\n");
+            this.texts.shift();
+            var temp = "";
+            for (i=0;i<this.texts.length;i++){
+                temp+=this.texts[i];}
+            this.text.text=temp;
+        }
+        menuStage.addChild(this.text);
+    }
+
+    function keyboard(keyCode){
+        var key = {};
+        key.code = keyCode;
+        key.isDown = false;
+        key.isUp = true;
+        key.press = undefined;
+        key.release = undefined;
+        key.downHandler = function(event){
+            if (event.keyCode === key.code){
+                if (key.isUp && key.press) key.press();
+                key.isDown = true;
+                key.isUp = false;
+            }
+            event.preventDefault();
+        };
+        key.upHandler = function(event){
+            if (event.keyCode === key.code) {
+                if (key.isDown && key.release) key.release();
+                key.isDown = false;
+                key.isUp = true;
+            }
+            event.preventDefault();
+        };
+        window.addEventListener(
+        "keydown",key.downHandler.bind(key),false);
+        window.addEventListener(
+        "keyup",key.upHandler.bind(key),false);
+        return key;
+    }
+    
+
+    abutton = keyboard(65);
+    qbutton = keyboard(81);
+    dbutton = keyboard(68);
+    ebutton = keyboard(69);
+    leftarrow = keyboard(37);
+    uparrow = keyboard(38);
+    rightarrow = keyboard(39);
+    downarrow = keyboard(40);
+    fbutton = keyboard(70);
+    rbutton = keyboard(82);
+    jbutton = keyboard(74);
+    wbutton = keyboard(87);
+    sbutton = keyboard(83);
+    
+    abutton.press = function(){
+        stage.children = [];
+        ecosystem = [];
+    }
+    qbutton.press = function(){
+        twitchVal=0;b.add('twitch '+twitchVal);
+    }
+    sbutton.press = function(){
+        twitchVal+=25;b.add('twitch '+twitchVal);
+    }
+    wbutton.press = function(){
+        twitchVal-=25;b.add('twitch '+twitchVal);
+    }
+    dbutton.press = function(){
+        if (mutateVal<1){mutateVal+=0.05;}
+        b.add('mutate '+mutateVal);
+    }
+    ebutton.press = function(){
+        if (mutateVal>0){mutateVal-=0.05;}
+        b.add('mutate '+mutateVal);
+    }
+    fbutton.press = function(){
+        if(eatVal<1){eatVal+=0.05;}
+        b.add('eat '+eatVal);
+    }
+    rbutton.press = function(){
+        if(eatVal>0){eatVal-=0.05;}
+        b.add('eat '+eatVal);
+    }
+    leftarrow.press = function(){
+        
+    }
+    rightarrow.press = function(){
+        
+    }
+    uparrow.press = function(){
+        b.add(stage.children.indexOf(ecosystem[0]));
+    }
+    downarrow.press = function(){
+        
+    }
+    
+    zOrder = function(){
+        stage.children.sort(function(a,b){
+            return ecosystem.indexOf(a)-ecosystem.indexOf(b);
+        })
+    }
+    
+    ecosystem = [];
+    tempContainer = [];
+    glTouches = [];
+    
+
+    function makeCirc2(){
+        var tempXY=undefined;
+        if (glTouches.length>0){
+            tempXY = [glTouches[0].pageX,glTouches[0].pageY];
+        }
+        if (mouseLoc){
+            tempXY = mouseLoc;
+        }
+        if (tempXY){
+            tempC = new PIXI.Sprite(circle);
+            tempC.rSize = 1/10;
+            tempC.width = tempC.rSize*w2;
+            tempC.height = tempC.rSize*w2;
+            tempC.x=tempXY[0]-((w-w2)/2);
+            tempC.y=tempXY[1]-((h-h2)/2);
+            tempC.tint=hsv2rgb(r()*360,0.5,1);
+            tempContainer.push(tempC);
+            //ecosystem.unshift(tempC);
+            stage.addChild(tempC);
+        }
+    }
+    
+    window.addEventListener('touchstart',function(event){
+        glTouches=event.touches;
+        b.add(event.touches.length);
+        if (event.touches.length==3){
+            stage.children = [];
+            ecosystem = [];
+        }
+    });
+    window.addEventListener('touchmove',function(event){
+        glTouches=event.touches;
+    });
+    window.addEventListener('touchend',function(event){
+        glTouches=event.touches;
+    });
+    
+    mouseLoc = undefined;
+    window.addEventListener('mousedown',function(event){
+        mouseLoc = [event.pageX,event.pageY];
+    });
+    window.addEventListener('mousemove',function(event){
+        if (mouseLoc){
+            mouseLoc = [event.pageX,event.pageY];
+        }
+    });
+    window.addEventListener('mouseup',function(event){
+        mouseLoc = undefined;
+    });
+    
+    
+    function animate(){
+        requestAnimationFrame(animate);
+        currtime = new Date().getTime();
+        delta = (currtime-lasttime)/1000*60;
+        blueBack.tilePosition.x+=0.6;
+        blueBack.tilePosition.y+=0.6;
+        
+        makeCirc2();
+        if (ecosystem.length>0){
+            ecosystem.unshift(ecosystem.pop());}
+        
+        while (tempContainer.length>0){
+            ecosystem.unshift(tempContainer.pop());
+            //b.add(ecosystem.length);
+        }
+
+        for (x=0;x<ecosystem.length;x++){
+            if (x<ecosystem.length-1){
+                var tempY = ecosystem[x].y-ecosystem[x+1].y;
+                var tempX = ecosystem[x].x-ecosystem[x+1].x;
+                var dist = sqrt(pow(tempY,2)+pow(tempX,2));
+                var tempRad = atan2(tempY,tempX)*-1+3*pi/2;
+                ecosystem[x].x+=sin(tempRad)*dist*delta*lerpVal;
+                ecosystem[x].y+=cos(tempRad)*dist*delta*lerpVal;
+                if (r()>eatVal){
+                    ecosystem[x+1].tint=ecosystem[x].tint;
+                }
+            }
+            else{
+                var tempY = ecosystem[x].y-ecosystem[0].y;
+                var tempX = ecosystem[x].x-ecosystem[0].x;
+                var dist = sqrt(pow(tempY,2)+pow(tempX,2));
+                var tempRad = atan2(tempY,tempX)*-1+3*pi/2;
+                ecosystem[x].x+=sin(tempRad)*dist*delta*lerpVal;
+                ecosystem[x].y+=cos(tempRad)*dist*delta*lerpVal;
+                if (r()>eatVal){
+                    ecosystem[0].tint=ecosystem[x].tint;
+                }
+            }
+            ecosystem[x].x+=unit*twitchVal*r()-unit*twitchVal/2;
+            ecosystem[x].y+=unit*twitchVal*r()-unit*twitchVal/2;
+            if (r()>mutateVal){
+                    ecosystem[x].tint=hsv2rgb(r()*360,0.5,1);
+                }
+            ecosystem[x].width=
+                ecosystem[x].height=
+                ecosystem[x].rSize*w2+
+                (ecosystem[x].rSize*w2*sin(x*8/ecosystem.length*pi+4.712)/2);
+        }
+        //zOrder();
+        b.text.alpha-=0.01;
+        menu.render(menuStage);
+        bg.render(bgStage);
+        renderer.render(stage);
+        lasttime = currtime;
+    }
+
+    </script>
+</body>
+</html>
